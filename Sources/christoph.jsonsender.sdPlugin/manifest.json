@@ -1,0 +1,40 @@
+{
+  "Actions": [
+    {
+      "Icon": "actionIcon",
+      "Name": "JSONSender",
+      "States": [
+        {
+          "Image": "actionDefaultImage",
+          "TitleAlignment": "middle",
+          "FontSize": "14"
+        }
+      ],
+      "SupportedInMultiActions": false,
+      "Tooltip": "Send JSON directly from Streamdeck",
+      "UUID": "christoph.jsonsender"
+    }
+  ],
+  "SDKVersion": 2,
+  "Author": "Christoph",
+  "CodePath": "code.html",
+  "PropertyInspectorPath": "index_pi.html",
+  "Description": "Allows you to send JSON to arbitrary services",
+  "Name": "JSON Sender",
+  "Icon": "pluginIcon",
+  "URL": "https://github.com/chriswein/StreamDeckJSONSender",
+  "Version": "1.4",
+  "OS": [
+    {
+      "Platform": "mac",
+      "MinimumVersion": "10.11"
+    },
+    {
+      "Platform": "windows",
+      "MinimumVersion": "10"
+    }
+  ],
+  "Software": {
+    "MinimumVersion": "4.1"
+  }
+}

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,minimal-ui,viewport-fit=cover"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <title>Property Inspector Samples PI</title>
+    <link rel="stylesheet" href="css/sdpi.css" />
+    <script src="./jquery.min.js"></script>
+    <script>
+      var currentSettings = {};
+
+      function listenToItemChange(cb) {
+        let items = $(".sdpi-wrapper .sdpi-item-value").get();
+        items.forEach((item) => {
+          item.onchange = cb;
+        });
+      }
+
+      function get_values(ct) {
+        let json = {
+          action: "christoph.jsonsender",
+          event: "sendToPlugin",
+          context: ct, 
+          payload: {},
+        };
+        let items = $(".sdpi-wrapper .sdpi-item-value").get();
+        let pl = {};
+        items.forEach((item) => {
+          pl[item.id.replace("input", "")] = item.value;
+          if (item.type === "textarea") {
+            try {
+              pl[item.id.replace("input", "")] = JSON.parse(item.value);
+            } catch (error) {
+              console.log(
+                "An error occured while parsing JSON from user input"
+              );
+              console.log(error);
+            }
+          }
+        });
+        json["payload"] = pl;
+        return json;
+      }
+
+      function getPersistentSettings(ws, ctx) {
+        var json = {
+          event: "getSettings",
+          context: ctx,
+        };
+        ws.send(JSON.stringify(json));
+      }
+
+      function setPersistentSettings(ws, ctx, settings) {
+        var json = {
+          event: "setSettings",
+          context: ctx,
+          payload: settings,
+        };
+        ws.send(JSON.stringify(json));
+      }
+
+      /**
+       * Sets the values delivered by json to be displayed.
+       * */
+      function setValues(settings) {
+        let items = $(".sdpi-wrapper .sdpi-item-value").get();
+        items.forEach((item) => {
+          if (settings[item.id.replace("input", "")] != undefined) {
+            if (typeof settings[item.id.replace("input", "")] != "object") {
+              console.log(settings[item.id.replace("input", "")]);
+              item.value = settings[item.id.replace("input", "")];
+            } else {
+              console.log("different");
+              console.log(settings[item.id.replace("input", "")]);
+              item.value = JSON.stringify(
+                settings[item.id.replace("input", "")]
+              );
+            }
+          }
+        });
+      }
+
+      function connectElgatoStreamDeckSocket(
+        inPort,
+        inPropertyInspectorUUID,
+        inRegisterEvent,
+        inInfo,
+        inActionInfo
+      ) {
+        websocket = new WebSocket("ws://127.0.0.1:" + inPort);
+        websocket.onopen = function () {
+          var json = {
+            event: inRegisterEvent,
+            uuid: inPropertyInspectorUUID,
+          };
+
+          websocket.send(JSON.stringify(json));
+          getPersistentSettings(websocket, inPropertyInspectorUUID);
+        };
+        websocket.onmessage = function (evt) {
+          console.log("Got some event" + evt);
+          // Received message from Stream Deck
+          var jsonObj = JSON.parse(evt.data);
+          var event = jsonObj["event"];
+          var action = jsonObj["action"];
+          var context = jsonObj["context"];
+          console.log(event);
+
+          if (event == "didReceiveSettings") {
+            /**
+             * We received some settings from StreamDeck
+             * */
+
+            setValues(jsonObj.payload.settings);
+            currentSettings = jsonObj.payload.settings;
+          }
+        };
+
+        /**
+         * Get's called when a user finishes input of value
+         * **/
+        listenToItemChange((evt) => {
+          let val = get_values(inPropertyInspectorUUID);
+          websocket.send(JSON.stringify(val)); // Send to plugin
+          /**
+           * Save new value permanent
+           * **/
+          currentSettings[evt.srcElement.id.replace("input", "")] =
+            val[evt.srcElement.id.replace("input", "")];
+          setPersistentSettings(
+            websocket,
+            inPropertyInspectorUUID,
+            val.payload
+          );
+        });
+      }
+    </script>
+  </head>
+
+  <body>
+    <div class="sdpi-wrapper">
+      <div class="sdpi-item" id="ip">
+        <div class="sdpi-item-label">IP</div>
+        <input
+          class="sdpi-item-value"
+          type="text"
+          id="ipinput"
+          value=""
+          required
+          pattern="http://\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}"
+        />
+      </div>
+      <div class="sdpi-item" id="port">
+        <div class="sdpi-item-label">Port</div>
+        <input class="sdpi-item-value" type="text" id="portinput" value="" pattern="\d{1,4}" />
+      </div>
+      <div class="sdpi-item" id="method">
+        <div class="sdpi-item-label">Select</div>
+        <select class="sdpi-item-value select" id="methodinput">
+          <option value="GET">GET</option>
+          <option value="POST">POST</option>
+        </select>
+      </div>
+      <div class="sdpi-item" id="header">
+        <div class="sdpi-item-label">Header(JSON Format)</div>
+        <textarea class="sdpi-item-value" type="text" id="headerinput" value="">
+        </textarea>
+      </div>
+      <div type="textarea" class="sdpi-item" id="json">
+        <div class="sdpi-item-label">JSON (labels in quotes!)</div>
+        <!--<span class="sdpi-item-value textarea">-->
+        <textarea
+          type="textarea"
+          id="jsoninput"
+          class="sdpi-item-value textarea"
+        ></textarea>
+        <!--  </span>-->
+      </div>
+      <div class="sdpi-item">
+        <div class="sdpi-item-label">Save</div>
+        <button class="sdpi-item-value" id="saveinput" value="">Save</button>
+      </div>
+    </div>
+  </body>
+</html>
