@@ -11,7 +11,7 @@
     /***
      * Use this function to send some json to whereever
      ***/
-      var json_sender = (method, address='http://127.0.0.1', port=80, header={"content-type":"application/json"}, payload) => {
+      var json_sender = (method, address='http://127.0.0.1', port='', header={"content-type":"application/json"}, payload) => {
         var separator = (port === "") ? "" : ":";
 
         $.ajax({
